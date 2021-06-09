@@ -3,7 +3,8 @@ from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 from django.http import HttpResponse, JsonResponse
 from rest_framework.parsers import JSONParser
-from rest_framework.decorators import api_view   
+from rest_framework.decorators import api_view 
+from rest_framework.views import APIView  
 from .models import Article
 from .serializers import ArticleSerializers
 from rest_framework.response import Response
@@ -14,6 +15,61 @@ from rest_framework import mixins
 #for authintication in rest_framework
 from rest_framework.authentication import SessionAuthentication,TokenAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
+
+from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
+
+
+class ArticleViewSet(viewsets.ViewSet):
+	def list(self, request):
+		articles=Article.objects.all()
+		serializer=ArticleSerializers(articles, many=True)
+		return Response(serializer.data)
+
+	def put(self, request):
+		serializer=ArticleSerializers(data=request.data)
+
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_201_CREATED)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+	def retrive(self,request,pk=None):
+		queryset=Article.objects.all()
+		article=get_object_or_404(queryset, pk=pk )
+		serializer=ArticleSerializers(article)
+		return Response(serializer.data)
+
+	def update(self, request, pk=None):
+		article=Article.objects.get(pk=pk)
+		serializer=ArticleSerializers(article,data=request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+	def partial_update(self, request, pk=None):
+		pass
+	def destroy(self, request, pk=None):
+		pass
+	def get(self,request, pk=None):
+		queryset=Article.objects.all()
+		article=get_object_or_404(queryset, pk=pk )
+		serializer=ArticleSerializers(article)
+		return Response(serializer.data)
+
+
+#generic viewset
+class Article_viewSet(viewsets.GenericViewSet, mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.RetrieveModelMixin,mixins.DestroyModelMixin):
+	serializer_class=ArticleSerializers
+	queryset=Article.objects.all()
+
+#for model viewset
+class Article_ViewSet(viewsets.ModelViewSet):
+	serializer_class=ArticleSerializers
+	queryset=Article.objects.all() 
+#generic API view
 
 class GenericAPIView(generics.GenericAPIView, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin,mixins.RetrieveModelMixin,mixins.DestroyModelMixin):
 	serializer_class=ArticleSerializers
@@ -42,7 +98,7 @@ class GenericAPIView(generics.GenericAPIView, mixins.ListModelMixin, mixins.Crea
 
 
 
-from rest_framework.views import APIView
+
 
 class ArticleView(APIView):
 	def get(self, request):
